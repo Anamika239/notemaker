@@ -23,3 +23,6 @@ It features a dark-themed interface, animated background, and a tagging system f
 - Database: MongoDB (via PyMongo)
 - Templates: Jinja2 (for dynamic content rendering)
 - Platform: macOS (developed on MacBook Air)
+_________________________________________________________________________________________________________________________
+
+<img width="959" alt="Screenshot 2025-04-16 at 2 05 41 AM" src="https://github.com/user-attachments/assets/be493f34-1216-4e15-a17a-cb536f8c8e33" />
