@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notzz</title>
+    <link rel="stylesheet" href="./css/styles.css">
+    <style>
+        
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #121212;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('path/to/your/background-image.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            animation: moveBackground 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes moveBackground {
+            0% {
+                background-position: 0% 0%;
+            }
+
+            100% {
+                background-position: 100% 100%;
+            }
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: rgba(30, 30, 30, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-top: 0;
+        }
+
+        #noteForm {
+            margin-bottom: 20px;
+        }
+
+        #title,
+        #content {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            border: 1px solid #444;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s;
+            background-color: #222;
+            color: #fff;
+        }
+
+        #title:focus,
+        #content:focus {
+            border-color: #ff4081;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ff4081;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #e91e63;
+        }
+
+        #notesList {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #notesList li {
+            background-color: #333;
+            padding: 20px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            color: #fff;
+        }
+
+        #notesList .note-content {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 10px;
+        }
+
+        #notesList button {
+            margin-left: 10px;
+        }
+
+        .note-timestamp {
+            font-size: 0.8em;
+            color: #bbb;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="background"></div>
+
+    <div class="container">
+        <h1>Notzz</h1>
+        <form id="noteForm">
+            <input type="text" placeholder="Note Title" required id="title">
+            <textarea name="content" id="content" placeholder="Note Content" maxlength="100"></textarea>
+            <button type="submit">Add Note</button>
+        </form>
+        <ul id="notesList"></ul>
+    </div>
+
+    <script>
+        const notesList = document.getElementById('notesList');
+        const noteForm = document.getElementById('noteForm');
+
+        async function loadNotes() {
+            const response = await fetch('/notes');
+            const notes = await response.json();
+            notes.forEach(note => {
+                const noteItem = document.createElement('li');
+                noteItem.dataset.id = note._id; 
+
+                const title = note.title || 'Untitled';
+                const content = note.content || 'No content available';
+                const timestamp = note.timestamp ? new Date(note.timestamp).toLocaleString() : ''; 
+
+                noteItem.innerHTML = `
+                    <div class="note-content"><strong>${title}</strong><br>${content}</div>
+                    ${timestamp ? `<div class="note-timestamp">${timestamp}</div>` : ''}
+                    <button class="edit-button">Edit</button>
+                    <button class="delete-button">Delete</button>
+                `;
+                notesList.appendChild(noteItem);
+            });
+        }
+
+        window.onload = loadNotes;
+
+        noteForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            const timestamp = new Date().toLocaleString(); 
+
+            const response = await fetch('/notes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title, content, timestamp }),
+            });
+
+            const newNote = await response.json();
+
+            const newTitle = newNote.title || 'Untitled';
+            const newContent = newNote.content || 'No content available';
+            const newTimestamp = newNote.timestamp ? new Date(newNote.timestamp).toLocaleString() : '';
+
+            const noteItem = document.createElement('li');
+            noteItem.dataset.id = newNote._id; 
+            noteItem.innerHTML = `
+                <div class="note-content"><strong>${newTitle}</strong><br>${newContent}</div>
+                ${newTimestamp ? `<div class="note-timestamp">${newTimestamp}</div>` : ''}
+                <button class="edit-button">Edit</button>
+                <button class="delete-button">Delete</button>
+            `;
+            notesList.appendChild(noteItem);
+
+            noteForm.reset();
+        });
+
+        notesList.addEventListener('click', async function (event) {
+            const noteItem = event.target.closest('li');
+            const noteId = noteItem.dataset.id; 
+            if (event.target.classList.contains('delete-button')) {
+                await fetch(`/notes/${noteId}`, {
+                    method: 'DELETE',
+                });
+
+                noteItem.remove();
+            }
+            if (event.target.classList.contains('edit-button')) {
+                const noteContentDiv = noteItem.querySelector('.note-content');
+                const currentContent = noteContentDiv.innerHTML.split('<br>');
+                const currentTitle = currentContent[0].replace('<strong>', '').replace('</strong>', '');
+                const currentText = currentContent[1];
+
+                const newTitle = prompt('Edit title:', currentTitle);
+                const newContent = prompt('Edit content:', currentText);
+
+                if (newTitle && newContent) {
+                    noteContentDiv.innerHTML = `<strong>${newTitle}</strong><br>${newContent}`;
+                    await fetch(`/notes/${noteId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ title: newTitle, content: newContent }),
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>
